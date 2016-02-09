@@ -3,9 +3,20 @@
 //main menu buttons
 MAINMENU MENU 
 {
-	MENUITEM "Start", CM_START
-	MENUITEM "Change Startpoint", CM_STARTPOINT
-	POPUP "Change Grid"
+	POPUP "Menu"
+	{
+		MENUITEM "Start", CM_START
+		MENUITEM "Pause", CM_STOP
+		MENUITEM "Reset", CM_RESET
+	}
+	POPUP "Startpoint"
+	{
+		MENUITEM "Top Left", CM_LEFTCORNER
+		MENUITEM "Center", CM_CENTER
+		MENUITEM "Random", CM_RANDOM
+	}
+	
+	POPUP "Grid"
  	{
   		MENUITEM "5x5", CM_GRID_5
   		MENUITEM "6x6", CM_GRID_6
@@ -13,6 +24,15 @@ MAINMENU MENU
   		MENUITEM "8x8", CM_GRID_8
   		MENUITEM "9x9", CM_GRID_9	
 		MENUITEM "10x10", CM_GRID_10
+		MENUITEM "15x15", CM_GRID_15
+		MENUITEM "16x8", CM_GRID_RECT
+ 	}
+ 	
+ 	POPUP "Speed"
+ 	{
+ 		MENUITEM "Slow", CM_SLOW
+ 		MENUITEM "Normal", CM_NORMAL
+ 		MENUITEM "Fast", CM_FAST
  	}
  	MENUITEM "About", CM_ABOUT
  	MENUITEM "Exit", CM_EXIT

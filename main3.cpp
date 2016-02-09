@@ -14,10 +14,6 @@ int sizeX = 8;
 int sizeY = 8;
 int tileWidth = 75;
 
-//knight position variable declaration
-int knightX = 0;
-int knightY = 0;
-
 bool tourStarted = false;
 bool drawKnight = false;
 int *flagArray = new int[sizeX*sizeY];
@@ -25,6 +21,7 @@ int totalMoves = 0;
 
 int ups = 500;
 const int ID_TIMER = 1;
+UINT ret;
 
 HWND hwnd;
 
@@ -51,7 +48,12 @@ void Resize(int newSize, HWND hwnd)
 	if(!tourStarted){
 		sizeX = newSize;
 		sizeY = newSize;
+		g_knightInfo.x = 0;
+		g_knightInfo.y = 0;
 		flagArray = new int[sizeX*sizeY];
+		for(int i = 0; i < sizeX*sizeY; i++){
+			flagArray[i] = 0;
+		}
 		SetWindowPos(hwnd, NULL, 10, 10, (sizeX*tileWidth)+10, (sizeY*tileWidth)+52, NULL);
 	}	
 }
@@ -230,7 +232,6 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 	{
 		case WM_CREATE:
 			{
-				UINT ret;
 				BITMAP bm;
 			
 				g_hbmKnight = LoadBitmap(GetModuleHandle(NULL), MAKEINTRESOURCE(IDB_SPRITE));
@@ -263,8 +264,12 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				g_knightInfo.width = bm.bmWidth;
 				g_knightInfo.height = bm.bmHeight;
 				
-				g_knightInfo.x = knightX;
-				g_knightInfo.y = knightY;
+				g_knightInfo.x = 0;
+				g_knightInfo.y = 0;
+				
+				for(int i = 0; i < sizeX*sizeY; i++){
+					flagArray[i] = 0;
+				}
 
 				ret = SetTimer(hwnd, ID_TIMER, ups, NULL);
 				if(ret == 0)
@@ -303,11 +308,48 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					if(!tourStarted){
 						tourStarted = true;
 						drawKnight = true;
-						//knightTour();
 					}
 					break;
-				case CM_STARTPOINT:
-					MessageBox (NULL, "Enter new start point: ", "Start point editor",0 );
+				case CM_STOP:
+					tourStarted = false;
+					drawKnight = false;
+					break;
+				case CM_RESET:
+					tourStarted = false;
+					drawKnight = false;
+					Resize(sizeX, hwnd);
+					g_knightInfo.x = 0;
+					g_knightInfo.y = 0;
+					break;
+				case CM_RANDOM:
+					if(!tourStarted){
+						g_knightInfo.x = rand() %sizeX;
+						g_knightInfo.y = rand() %sizeY;
+					}
+					break;
+				case CM_CENTER:
+					if(!tourStarted){
+						g_knightInfo.x = sizeX/2;
+						g_knightInfo.y = sizeY/2;
+					}
+					break;
+				case CM_LEFTCORNER:
+					if(!tourStarted){
+						g_knightInfo.x = 0;
+						g_knightInfo.y = 0;
+					}
+					break;
+				case CM_SLOW:
+					ups = 1000;
+					SetTimer(hwnd, ID_TIMER, ups, NULL);
+					break;
+				case CM_NORMAL:
+					ups = 500;
+					SetTimer(hwnd, ID_TIMER, ups, NULL);
+					break;
+				case CM_FAST:
+					ups = 250;
+					SetTimer(hwnd, ID_TIMER, ups, NULL);
 					break;
 				case CM_EXIT:
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
@@ -333,6 +375,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				case CM_GRID_10:
 					Resize(10, hwnd);
 					break;
+				case CM_GRID_15:
+					Resize(15, hwnd);
+					break;
+				case CM_GRID_RECT:
+						if(!tourStarted){
+							sizeX = 16;
+							sizeY = 8;
+							g_knightInfo.x = 0;
+							g_knightInfo.y = 0;
+							flagArray = new int[sizeX*sizeY];
+							for(int i = 0; i < sizeX*sizeY; i++){
+								flagArray[i] = 0;
+							}
+							SetWindowPos(hwnd, NULL, 10, 10, (sizeX*tileWidth)+10, (sizeY*tileWidth)+52, NULL);
+						}
+						break;
 			}
 			break;
 		case WM_DESTROY:
