@@ -170,7 +170,12 @@ bool isMovePossible(chess_moves next_move) {
 //function to calculate the next move of the knight, gets called by WM_TIMER 
 void UpdateKnight()
 {
-	if(updateKnight && totalMoves < sizeX*sizeY){ //only need to calculate if the knight should move and the tour hasn't been completed yet
+	if(totalMoves == sizeX*sizeY){
+		updateKnight = false;
+		totalMoves = 0;
+		MessageBox(hwnd, "Tour is complete", "Complete", MB_OK);
+	}
+	else if(updateKnight){ //only need to calculate if the knight should move and the tour hasn't been completed yet
 		chess_moves tempMove, tempMoveTwo, lowestScoringMove; //empty chess moves to store possible moves
 		int lowestMoveScore = 8;
 		int tempScore;
@@ -222,7 +227,9 @@ void UpdateKnight()
 				}	
 			}
 		}
-	
+		
+		totalMoves++;
+		
 		//if no move that did not have a score of 9 was found, do any move that is possible (usually the last move)
 		if(!moveFound){
 			for(int i = 0; i < 8; i++){
@@ -232,7 +239,12 @@ void UpdateKnight()
 				if(isMovePossible(tempMove)){
 					g_knightInfo.x = tempMove.x;
 					g_knightInfo.y = tempMove.y;
+					return;
 				}
+			}
+			if(totalMoves != sizeX*sizeY){
+				updateKnight = false;
+				MessageBox(hwnd, "Tour is not possible from this starting position", "Error", MB_OK | MB_ICONEXCLAMATION);
 			}
 		}
 		//if a move was found, update the knights position accordingly
@@ -240,8 +252,6 @@ void UpdateKnight()
 			g_knightInfo.x = lowestScoringMove.x;
 			g_knightInfo.y = lowestScoringMove.y;
 		}
-		//increase the amount of moves taken
-		totalMoves++;
 	}
 }
 
@@ -337,8 +347,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					break;
 				//pause the tour
 				case CM_STOP:
-					tourStarted = false;
-					updateKnight = false;
+					if(updateKnight){
+						tourStarted = false;
+						updateKnight = false;
+					}
 					break;
 				//reset the tour and place the knight back to 0,0
 				case CM_RESET:
@@ -353,6 +365,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 						srand(time(NULL));
 						g_knightInfo.x = rand() %sizeX;
 						g_knightInfo.y = rand() %sizeY;
+						HDC hdc = GetDC(hwnd);
+						DrawBoard(hdc);
+						DrawKnight(hdc);
+						ReleaseDC(hwnd, hdc);
 					}
 					break;
 				//place the knight in a centered tile, because g_knightInfo.x and y are both ints, these are automatically rounded towards zero
@@ -360,6 +376,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					if(!tourStarted){
 						g_knightInfo.x = sizeX/2;
 						g_knightInfo.y = sizeY/2;
+						HDC hdc = GetDC(hwnd);
+						DrawBoard(hdc);
+						DrawKnight(hdc);
+						ReleaseDC(hwnd, hdc);
 					}
 					break;
 				//place the knight in the left corner: 0,0
@@ -367,6 +387,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					if(!tourStarted){
 						g_knightInfo.x = 0;
 						g_knightInfo.y = 0;
+						HDC hdc = GetDC(hwnd);
+						DrawBoard(hdc);
+						DrawKnight(hdc);
+						ReleaseDC(hwnd, hdc);
 					}
 					break;
 				//change timer to tick once every second (1000 ms)

@@ -40,8 +40,8 @@ MAINMENU MENU
 }
 
 //art assets
-IDI_MYICON ICON "knight_icon.ico"
-IDB_SPRITE BITMAP DISCARDABLE "knight_sprite.bmp"
-IDB_LIGHT_TILE BITMAP DISCARDABLE "light_tile.bmp"
-IDB_DARK_TILE BITMAP DISCARDABLE "dark_tile.bmp"
-IDB_FLAG_SPRITE BITMAP DISCARDABLE "flag_sprite.bmp"
+IDI_MYICON ICON "art_assets/knight_icon.ico"
+IDB_SPRITE BITMAP DISCARDABLE "art_assets/knight_sprite.bmp"
+IDB_LIGHT_TILE BITMAP DISCARDABLE "art_assets/light_tile.bmp"
+IDB_DARK_TILE BITMAP DISCARDABLE "art_assets/dark_tile.bmp"
+IDB_FLAG_SPRITE BITMAP DISCARDABLE "art_assets/flag_sprite.bmp"
