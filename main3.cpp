@@ -1,5 +1,6 @@
 #include <windows.h>
 #include "resource.h"
+#include <time.h>
 
 //bitmap variable declaration
 HBITMAP g_hbmKnight = NULL;
@@ -323,6 +324,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					break;
 				case CM_RANDOM:
 					if(!tourStarted){
+						srand(time(NULL));
 						g_knightInfo.x = rand() %sizeX;
 						g_knightInfo.y = rand() %sizeY;
 					}
