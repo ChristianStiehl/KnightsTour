@@ -21,13 +21,12 @@ int knightY = 0;
 bool tourStarted = false;
 bool drawKnight = false;
 int *flagArray = new int[sizeX*sizeY];
-int moveIndex = 0;
+int totalMoves = 0;
+
 int ups = 500;
 const int ID_TIMER = 1;
 
 HWND hwnd;
-
-int *tour = new int[sizeX*sizeY]; 
 
 //define a structure for the knight
 typedef struct _KNIGHTINFO
@@ -86,78 +85,6 @@ HBITMAP CreateBitmapMask(HBITMAP hbmColour, COLORREF crTransparent)
 	return hbmMask;
 }
 
-// check if the next move is possible
-bool isMovePossible(chess_moves next_move) {
-   int i = next_move.x;
-   int j = next_move.y;
-   if ((i >= 0 && i < sizeX) && (j >= 0 && j < sizeY) && (flagArray[i*sizeY+j] == 0) )
-      return true;
-   return false;
-}
-
-// recursive function to find a knight tour
-bool findTour(chess_moves move_KT[], int x, int y, int move_count) {
-   int i;
-   chess_moves next_move = {0,0};
-   
-   if (move_count == sizeX*sizeY-1) {
-      // Knight tour is completed i.e all cells on the
-      // chess board has been visited by knight once 
-      return true;
-   }
-
-   // try out the possible moves starting from the current coordinate
-   for (i = 0; i < 8; i++) {
-      // get the next move
-      next_move.x = x + move_KT[i].x;
-      next_move.y = y + move_KT[i].y;
-
-      if (isMovePossible(next_move)) {
-         // if the move is possible
-         // increment the move count and store it in tour matrix
-         tour[next_move.x * sizeY + next_move.y] = move_count+1;
-         if (findTour(move_KT, next_move.x, next_move.y, move_count+1) == true) {
-            return true;
-         }
-         else {
-            // this move was invalid, try out other possiblities 
-            tour[next_move.x * sizeY + next_move.y] = 0;
-         }
-      }
-   }
-   return false;
-}
-
-// wrapper function
-void knightTour() {
-   	int i,j;
-
-   	// initialize tour matrix
-   	for (i = 0; i < sizeX; i++) {
-   	   for (j = 0; j < sizeY; j++) {
-   	      tour[i * sizeY + j] = 0;
-   	   }
-   	}
-
-   	// all possible moves that knight can take
-   	chess_moves move_KT[8] = { {2,1}, {1,2},{-1,2},{-2,1}, {-2,-1},{-1,-2},{1,-2},{2,-1} };
-
-   	// knight tour starting point
-   	chess_moves curr_move = {g_knightInfo.x, g_knightInfo.y};
-
-   	// find a possible knight tour using a recursive function
-   	// starting from current move 
-   	if(findTour(move_KT, knightX, knightY, 0) == false) {
-     	 MessageBox(hwnd, "Knight's Tour does not exist from this position on this board!", "Error", MB_OK | MB_ICONEXCLAMATION);
-     	 tourStarted = false;
-   	}
-   	else {
-   	   //draw knight along tour
-   		moveIndex = 0;
-   	   drawKnight = true;
-   	}
-}
-
 void DrawFlag(HDC hdc, HDC hdcMem, int i, int j)
 {
 	SelectObject(hdcMem, g_hbmFlagMask);
@@ -211,9 +138,19 @@ void DrawKnight(HDC hdc)
 	DeleteDC(hdcMem);
 }
 
+// check if the next move is possible
+bool isMovePossible(chess_moves next_move) {
+   	int i = next_move.x;
+   	int j = next_move.y;
+   	if ((i >= 0 && i < sizeX) && (j >= 0 && j < sizeY) && (flagArray[i*sizeY+j] == 0) ){
+   		return true;
+   	}
+   	return false;
+}
+
 void UpdateKnight()
 {
-	if(drawKnight){
+	if(drawKnight && totalMoves < sizeX*sizeY){
 	chess_moves tempMove;
 	chess_moves tempMoveTwo;
 	int lowestMoveScore = 8;
@@ -233,6 +170,7 @@ void UpdateKnight()
 	}
 	
 	for(int i = 0; i < 8; i++){
+		tempScore = 0;
 		tempMove.x = g_knightInfo.x + moveArray[i].x;
 		tempMove.y = g_knightInfo.y + moveArray[i].y;
 		
@@ -244,56 +182,46 @@ void UpdateKnight()
 					tempScore++;
 				}
 			}
-			if(tempScore < lowestMoveScore){
-				if(tempScore = 0){
-					finalMove = tempMove;
-					finalMoveFound = true;
-				}
-				else if(tempScore = 1){
-					emergencyMove = tempMove;
-					emergencyMoveFound = true;
-				}
-				else {
+			if(tempScore < lowestMoveScore && tempScore != 0){
+				lowestMoveScore = tempScore;
+				lowestScoringMove = tempMove;
+				moveFound = true;	
+			}
+			else if(tempScore == lowestMoveScore && tempScore != 0){
+				if(tempMove.x == 0 || tempMove.x == sizeX-1){
 					lowestMoveScore = tempScore;
 					lowestScoringMove = tempMove;
-					moveFound = true;	
+					moveFound = true;
+				}
+				else if(tempMove.y == 0 || tempMove.y == sizeY-1){
+					lowestMoveScore = tempScore;
+					lowestScoringMove = tempMove;
+					moveFound = true;
 				}
 			}	
 		}
 	}
 	
-	if(moveFound){
-		g_knightInfo.x = lowestScoringMove.x;
-		g_knightInfo.y = lowestScoringMove.y;
-	}
-	else if(emergencyMoveFound){
-		g_knightInfo.x = emergencyMove.x;
-		g_knightInfo.y = emergencyMove.y;
-	}
-	else if(finalMoveFound){
-		g_knightInfo.x = finalMove.x;
-		g_knightInfo.y = finalMove.y;
-	}
-}
-
-	/*
-	if(drawKnight){
-		for(int i= 0; i < sizeX; i++){
-			for (int j = 0; j < sizeY; j++) {
-				if(tour[i * sizeY +j] == moveIndex){
-					g_knightInfo.x = i;
-					g_knightInfo.y = j;
-				
-					if(((g_knightInfo.x/tileWidth) *sizeY+ (g_knightInfo.y/tileWidth)) < sizeX*sizeY){
-						flagArray[(g_knightInfo.x) *sizeY+ (g_knightInfo.y)] = 1;
-					}
-					moveIndex++;
-					return;
-				}
-      		}
+	if(!moveFound){
+		for(int i = 0; i < 8; i++){
+			tempMove.x = g_knightInfo.x + moveArray[i].x;
+			tempMove.y = g_knightInfo.y + moveArray[i].y;
+		
+			if(isMovePossible(tempMove)){
+				g_knightInfo.x = tempMove.x;
+				g_knightInfo.y = tempMove.y;
+				totalMoves++;
+				return;
+			}
 		}
 	}
-	*/
+	else{
+		g_knightInfo.x = lowestScoringMove.x;
+		g_knightInfo.y = lowestScoringMove.y;
+		totalMoves++;
+		return;
+	}
+}
 }
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
