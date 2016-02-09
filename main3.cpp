@@ -1,6 +1,9 @@
 #include <windows.h>
 #include "resource.h"
 #include <time.h>
+#include <sstream>
+
+using namespace std;
 
 //bitmap variable declaration
 HBITMAP g_hbmKnight = NULL;
@@ -45,18 +48,18 @@ KNIGHTINFO g_knightInfo;
 chess_moves moveArray[8] = { {2,1}, {1,2},{-1,2},{-2,1}, {-2,-1},{-1,-2},{1,-2},{2,-1} };
 
 //function to resize the board, update the flag array size and resize the window
-void Resize(int newSize, HWND hwnd)
+void Resize(int newX, int newY, HWND hwnd)
 {
 	if(!tourStarted){
-		sizeX = newSize;
-		sizeY = newSize;
+		sizeX = newX;
+		sizeY = newY;
 		g_knightInfo.x = 0;
 		g_knightInfo.y = 0;
 		flagArray = new int[sizeX*sizeY];
 		for(int i = 0; i < sizeX*sizeY; i++){
 			flagArray[i] = 0;
 		}
-		SetWindowPos(hwnd, NULL, 10, 10, (sizeX*tileWidth)+10, (sizeY*tileWidth)+52, NULL);
+		SetWindowPos(hwnd, NULL, 10, 10, (sizeX*tileWidth)+10, (sizeY*tileWidth)+52, SWP_SHOWWINDOW);
 	}	
 }
 
@@ -92,11 +95,19 @@ HBITMAP CreateBitmapMask(HBITMAP hbmColour, COLORREF crTransparent)
 //function to draw a flag
 void DrawFlag(HDC hdc, HDC hdcMem, int i, int j)
 {
+	RECT rec;
+	SetRect(&rec, i*75, j*75, i*75+75, j*75+75);
+	
 	SelectObject(hdcMem, g_hbmFlagMask);
 	BitBlt(hdc, i*tileWidth, j*tileWidth, tileWidth, tileWidth, hdcMem, 0, 0, SRCAND);
 
 	SelectObject(hdcMem, g_hbmFlag);
 	BitBlt(hdc, i*tileWidth, j*tileWidth, tileWidth, tileWidth, hdcMem, 0, 0, SRCPAINT);
+	
+	std::stringstream buffer;
+    buffer << flagArray[i*sizeY+j];
+
+    DrawText(hdc, buffer.str().c_str(), -1, &rec, DT_SINGLELINE);
 }
 
 //function to draw a tile
@@ -124,7 +135,7 @@ void DrawBoard(HDC hdc)
 				else { DrawTile(hdc, hdcMem, i, j, bm, g_hbmDark); }
 			}
 			
-			if(flagArray[i*sizeY+j] == 1){
+			if(flagArray[i*sizeY+j] >= 1){
 				DrawFlag(hdc, hdcMem, i, j);
 			}					
 		}
@@ -167,7 +178,7 @@ void UpdateKnight()
 	
 		//mark the current tile as visited in the flagArray
 		if(((g_knightInfo.x/tileWidth) *sizeY+ (g_knightInfo.y/tileWidth)) < sizeX*sizeY){
-			flagArray[(g_knightInfo.x) *sizeY+ (g_knightInfo.y)] = 1;
+			flagArray[(g_knightInfo.x) *sizeY+ (g_knightInfo.y)] = totalMoves+1;
 		}
 		
 		//these for loops go to 8 because there are 8 moves possible in moveArray, does not get affected by board size
@@ -333,9 +344,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				case CM_RESET:
 					tourStarted = false;
 					updateKnight = false;
-					g_knightInfo.x = 0;
-					g_knightInfo.y = 0;
-					Resize(sizeX, hwnd);
+					totalMoves = 0;
+					Resize(sizeX, sizeY, hwnd);
 					break;
 				//place the knight on a random position (time(NULL) is used as seed for rand
 				case CM_RANDOM:
@@ -374,6 +384,10 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					ups = 250;
 					SetTimer(hwnd, ID_TIMER, ups, NULL);
 					break;
+				case CM_EXTREME:
+					ups = 50;
+					SetTimer(hwnd, ID_TIMER, ups, NULL);
+					break;
 				case CM_EXIT:
 					PostMessage(hwnd, WM_CLOSE, 0, 0);
 					break;
@@ -382,40 +396,29 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					break;
 				//all CM_GRID commands resize the grid
 				case CM_GRID_5:
-					Resize(5, hwnd);
+					Resize(5, 5, hwnd);
 					break;
 				case CM_GRID_6:
-					Resize(6, hwnd);
+					Resize(6, 6, hwnd);
 					break;
 				case CM_GRID_7:
-					Resize(7, hwnd);
+					Resize(7, 7, hwnd);
 					break;
 				case CM_GRID_8:
-					Resize(8, hwnd);
+					Resize(8,8, hwnd);
 					break;
 				case CM_GRID_9:
-					Resize(9, hwnd);
+					Resize(9,9, hwnd);
 					break;
 				case CM_GRID_10:
-					Resize(10, hwnd);
+					Resize(10,10,  hwnd);
 					break;
 				case CM_GRID_15:
-					Resize(15, hwnd);
+					Resize(15,15, hwnd);
 					break;
-				//Resize expects the board to be square, so CM_GRID_RECT does the function itself
 				case CM_GRID_RECT:
-						if(!tourStarted){
-							sizeX = 16;
-							sizeY = 8;
-							g_knightInfo.x = 0;
-							g_knightInfo.y = 0;
-							flagArray = new int[sizeX*sizeY];
-							for(int i = 0; i < sizeX*sizeY; i++){
-								flagArray[i] = 0;
-							}
-							SetWindowPos(hwnd, NULL, 10, 10, (sizeX*tileWidth)+10, (sizeY*tileWidth)+52, NULL);
-						}
-						break;
+					Resize(16,8, hwnd);
+					break;
 			}
 			break;
 		case WM_DESTROY:

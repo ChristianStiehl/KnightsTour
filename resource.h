@@ -15,6 +15,7 @@
 #define CM_SLOW				9068
 #define CM_NORMAL			9067
 #define CM_FAST				9066
+#define CM_EXTREME			9065
 
 //grid layout ids
 #define CM_GRID_5 			105
