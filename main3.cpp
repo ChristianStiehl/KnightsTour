@@ -10,23 +10,22 @@ HBITMAP g_hbmDark = NULL;
 HBITMAP g_hbmFlag = NULL;
 HBITMAP g_hbmFlagMask = NULL;
 
-//grid x size, y size and chess board tile width
-int sizeX = 8;
-int sizeY = 8;
-int tileWidth = 75;
+int sizeX = 8; //width of the grid
+int sizeY = 8; //height of the grid
+int tileWidth = 75; //widht of each square
 
-bool tourStarted = false;
-bool drawKnight = false;
-int *flagArray = new int[sizeX*sizeY];
-int totalMoves = 0;
+bool tourStarted = false; //bool to check if a tour is in progress
+bool updateKnight = false; //bool to check if the knight should start calculating a route
 
-int ups = 500;
-const int ID_TIMER = 1;
-UINT ret;
+int *flagArray = new int[sizeX*sizeY]; //array to check what tiles have been visited
+int totalMoves = 0; //number of moves taken
+
+int ups = 500; //update duration in milliseconds
+const int ID_TIMER = 1; //timer declaration
 
 HWND hwnd;
 
-//define a structure for the knight
+//defines a structure for the knight
 typedef struct _KNIGHTINFO
 {
 	//width and height of the sprite
@@ -35,15 +34,17 @@ typedef struct _KNIGHTINFO
 	int x, y;
 }KNIGHTINFO;
 
-// defines a structure for chess moves
+//defines a structure for a chess move
 typedef struct chess_moves {
    //x and y position on the board
    int x,y;
 }chess_moves;
 
 KNIGHTINFO g_knightInfo;
+//create moveArray and fill it with all 8 possible moves a knight could make from any square
 chess_moves moveArray[8] = { {2,1}, {1,2},{-1,2},{-2,1}, {-2,-1},{-1,-2},{1,-2},{2,-1} };
 
+//function to resize the board, update the flag array size and resize the window
 void Resize(int newSize, HWND hwnd)
 {
 	if(!tourStarted){
@@ -60,7 +61,7 @@ void Resize(int newSize, HWND hwnd)
 }
 
 //function to create bitmap masks for transparency
-//source: forgers win32 tutorial
+//source: forgers win32 tutorial, see notes
 HBITMAP CreateBitmapMask(HBITMAP hbmColour, COLORREF crTransparent)
 {
 	HDC hdcMem, hdcMem2;
@@ -88,6 +89,7 @@ HBITMAP CreateBitmapMask(HBITMAP hbmColour, COLORREF crTransparent)
 	return hbmMask;
 }
 
+//function to draw a flag
 void DrawFlag(HDC hdc, HDC hdcMem, int i, int j)
 {
 	SelectObject(hdcMem, g_hbmFlagMask);
@@ -97,6 +99,7 @@ void DrawFlag(HDC hdc, HDC hdcMem, int i, int j)
 	BitBlt(hdc, i*tileWidth, j*tileWidth, tileWidth, tileWidth, hdcMem, 0, 0, SRCPAINT);
 }
 
+//function to draw a tile
 void DrawTile(HDC hdc, HDC hdcMem, int i,int j, BITMAP bm, HBITMAP hbm)
 {
 	SelectObject(hdcMem, hbm);
@@ -104,6 +107,7 @@ void DrawTile(HDC hdc, HDC hdcMem, int i,int j, BITMAP bm, HBITMAP hbm)
 	BitBlt(hdc, i*tileWidth, j*tileWidth, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY);
 }
 
+//function that loops trough the entire board and calls DrawTile and DrawFlag when needed
 void DrawBoard(HDC hdc)
 {
 	BITMAP bm;
@@ -128,6 +132,7 @@ void DrawBoard(HDC hdc)
 	DeleteDC(hdcMem);
 }
 
+//function that draws the knight on his position
 void DrawKnight(HDC hdc)
 {
 	HDC hdcMem = CreateCompatibleDC(hdc);
@@ -141,7 +146,7 @@ void DrawKnight(HDC hdc)
 	DeleteDC(hdcMem);
 }
 
-// check if the next move is possible
+//function to check if a move would place the knight out of bounds or on a square that has already been visited
 bool isMovePossible(chess_moves next_move) {
    	int i = next_move.x;
    	int j = next_move.y;
@@ -151,86 +156,90 @@ bool isMovePossible(chess_moves next_move) {
    	return false;
 }
 
+//function to calculate the next move of the knight, gets called by WM_TIMER 
 void UpdateKnight()
 {
-	if(drawKnight && totalMoves < sizeX*sizeY){
-	chess_moves tempMove;
-	chess_moves tempMoveTwo;
-	int lowestMoveScore = 8;
-	int tempScore = 0;
-	chess_moves lowestScoringMove = {0,0};
-	bool moveFound = false;
+	if(updateKnight && totalMoves < sizeX*sizeY){ //only need to calculate if the knight should move and the tour hasn't been completed yet
+		chess_moves tempMove, tempMoveTwo, lowestScoringMove; //empty chess moves to store possible moves
+		int lowestMoveScore = 8;
+		int tempScore;
+		bool moveFound = false;
 	
-	chess_moves finalMove;
-	chess_moves emergencyMove;
-	
-	bool finalMoveFound = false;
-	bool emergencyMoveFound = false;
-	
-	//knight has been to this space
-	if(((g_knightInfo.x/tileWidth) *sizeY+ (g_knightInfo.y/tileWidth)) < sizeX*sizeY){
-		flagArray[(g_knightInfo.x) *sizeY+ (g_knightInfo.y)] = 1;
-	}
-	
-	for(int i = 0; i < 8; i++){
-		tempScore = 0;
-		tempMove.x = g_knightInfo.x + moveArray[i].x;
-		tempMove.y = g_knightInfo.y + moveArray[i].y;
-		
-		if(isMovePossible(tempMove)){
-			for(int j = 0; j < 8; j++){
-				tempMoveTwo.x = tempMove.x + moveArray[j].x;
-				tempMoveTwo.y = tempMove.y + moveArray[j].y;
-				if(isMovePossible(tempMoveTwo)){
-					tempScore++;
-				}
-			}
-			if(tempScore < lowestMoveScore && tempScore != 0){
-				lowestMoveScore = tempScore;
-				lowestScoringMove = tempMove;
-				moveFound = true;	
-			}
-			else if(tempScore == lowestMoveScore && tempScore != 0){
-				if(tempMove.x == 0 || tempMove.x == sizeX-1){
-					lowestMoveScore = tempScore;
-					lowestScoringMove = tempMove;
-					moveFound = true;
-				}
-				else if(tempMove.y == 0 || tempMove.y == sizeY-1){
-					lowestMoveScore = tempScore;
-					lowestScoringMove = tempMove;
-					moveFound = true;
-				}
-			}	
+		//mark the current tile as visited in the flagArray
+		if(((g_knightInfo.x/tileWidth) *sizeY+ (g_knightInfo.y/tileWidth)) < sizeX*sizeY){
+			flagArray[(g_knightInfo.x) *sizeY+ (g_knightInfo.y)] = 1;
 		}
-	}
-	
-	if(!moveFound){
+		
+		//these for loops go to 8 because there are 8 moves possible in moveArray, does not get affected by board size
 		for(int i = 0; i < 8; i++){
+			//reset score to 0 and apply the next possible move to the current position
+			tempScore = 0;
 			tempMove.x = g_knightInfo.x + moveArray[i].x;
 			tempMove.y = g_knightInfo.y + moveArray[i].y;
 		
+			//if the new move is possible calculate its value, else try the next possible move
 			if(isMovePossible(tempMove)){
-				g_knightInfo.x = tempMove.x;
-				g_knightInfo.y = tempMove.y;
-				totalMoves++;
-				return;
+				//for each move that is possible, check how many moves are possible from that tile, result is it's score
+				for(int j = 0; j < 8; j++){
+					tempMoveTwo.x = tempMove.x + moveArray[j].x;
+					tempMoveTwo.y = tempMove.y + moveArray[j].y;
+					if(isMovePossible(tempMoveTwo)){
+						//increase score
+						tempScore++;
+					}
+				}
+				
+				//after calculating a moves score check if its lower than the current lowest score but not 0
+				if(tempScore < lowestMoveScore && tempScore != 0){
+					lowestMoveScore = tempScore;
+					lowestScoringMove = tempMove;
+					moveFound = true;	
+				}
+				//if its not lower, check if its equal to the current lowest score but not 0
+				else if(tempScore == lowestMoveScore && tempScore != 0){
+					//if its equal check if the new move will place the knight along the edge of the board, these moves are prefered
+					if(tempMove.x == 0 || tempMove.x == sizeX-1){
+						lowestMoveScore = tempScore;
+						lowestScoringMove = tempMove;
+						moveFound = true;
+					}
+					else if(tempMove.y == 0 || tempMove.y == sizeY-1){
+						lowestMoveScore = tempScore;
+						lowestScoringMove = tempMove;
+						moveFound = true;
+					}
+				}	
 			}
 		}
-	}
-	else{
-		g_knightInfo.x = lowestScoringMove.x;
-		g_knightInfo.y = lowestScoringMove.y;
+	
+		//if no move that did not have a score of 9 was found, do any move that is possible (usually the last move)
+		if(!moveFound){
+			for(int i = 0; i < 8; i++){
+				tempMove.x = g_knightInfo.x + moveArray[i].x;
+				tempMove.y = g_knightInfo.y + moveArray[i].y;
+			
+				if(isMovePossible(tempMove)){
+					g_knightInfo.x = tempMove.x;
+					g_knightInfo.y = tempMove.y;
+				}
+			}
+		}
+		//if a move was found, update the knights position accordingly
+		else{
+			g_knightInfo.x = lowestScoringMove.x;
+			g_knightInfo.y = lowestScoringMove.y;
+		}
+		//increase the amount of moves taken
 		totalMoves++;
-		return;
 	}
-}
 }
 
+//win 32 callback function
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) {
 	
 	switch(Message) 
 	{
+		//on create load all bitmaps, set knight position, fill flagArray with 0 and start the timer
 		case WM_CREATE:
 			{
 				BITMAP bm;
@@ -272,7 +281,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					flagArray[i] = 0;
 				}
 
-				ret = SetTimer(hwnd, ID_TIMER, ups, NULL);
+				UINT ret = SetTimer(hwnd, ID_TIMER, ups, NULL);
 				if(ret == 0)
 					MessageBox(hwnd, "Could not SetTimer()!", "Error", MB_OK | MB_ICONEXCLAMATION);
 		}
@@ -280,6 +289,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 		case WM_CLOSE:
 			DestroyWindow(hwnd);
 		break;
+		//WM_PAINT is only called when the window is resized and on the initial creation
 		case WM_PAINT:
 			{
 				PAINTSTRUCT ps;
@@ -291,6 +301,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				EndPaint(hwnd, &ps);
 			}
 			break;
+		//WM_TIMER is the 'gameloop' of this program, calls update and draw functions every 500 ms
 		case WM_TIMER:
 			{
 				HDC hdc = GetDC(hwnd);
@@ -303,25 +314,30 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				ReleaseDC(hwnd, hdc);
 			}
 			break;
+		//Menu commands that are defined in resource.h and created in resource.rc
 		case WM_COMMAND:
 			switch(LOWORD(wParam)) {
+				//start the tour
 				case CM_START:
 					if(!tourStarted){
 						tourStarted = true;
-						drawKnight = true;
+						updateKnight = true;
 					}
 					break;
+				//pause the tour
 				case CM_STOP:
 					tourStarted = false;
-					drawKnight = false;
+					updateKnight = false;
 					break;
+				//reset the tour and place the knight back to 0,0
 				case CM_RESET:
 					tourStarted = false;
-					drawKnight = false;
-					Resize(sizeX, hwnd);
+					updateKnight = false;
 					g_knightInfo.x = 0;
 					g_knightInfo.y = 0;
+					Resize(sizeX, hwnd);
 					break;
+				//place the knight on a random position (time(NULL) is used as seed for rand
 				case CM_RANDOM:
 					if(!tourStarted){
 						srand(time(NULL));
@@ -329,26 +345,31 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 						g_knightInfo.y = rand() %sizeY;
 					}
 					break;
+				//place the knight in a centered tile, because g_knightInfo.x and y are both ints, these are automatically rounded towards zero
 				case CM_CENTER:
 					if(!tourStarted){
 						g_knightInfo.x = sizeX/2;
 						g_knightInfo.y = sizeY/2;
 					}
 					break;
+				//place the knight in the left corner: 0,0
 				case CM_LEFTCORNER:
 					if(!tourStarted){
 						g_knightInfo.x = 0;
 						g_knightInfo.y = 0;
 					}
 					break;
+				//change timer to tick once every second (1000 ms)
 				case CM_SLOW:
 					ups = 1000;
 					SetTimer(hwnd, ID_TIMER, ups, NULL);
 					break;
+				//change timer to tick twice per second (500ms)
 				case CM_NORMAL:
 					ups = 500;
 					SetTimer(hwnd, ID_TIMER, ups, NULL);
 					break;
+				//change timer to tick four times per second (250ms)
 				case CM_FAST:
 					ups = 250;
 					SetTimer(hwnd, ID_TIMER, ups, NULL);
@@ -359,6 +380,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				case CM_ABOUT:
 					MessageBox (NULL, "Knight's Tour simulation\nCreated using the Win32 API in Dev-C++\nMade by Christian Stiehl" , "About...", 0);
 					break;
+				//all CM_GRID commands resize the grid
 				case CM_GRID_5:
 					Resize(5, hwnd);
 					break;
@@ -380,6 +402,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				case CM_GRID_15:
 					Resize(15, hwnd);
 					break;
+				//Resize expects the board to be square, so CM_GRID_RECT does the function itself
 				case CM_GRID_RECT:
 						if(!tourStarted){
 							sizeX = 16;
@@ -402,6 +425,9 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 			DeleteObject(g_hbmMask);
 			DeleteObject(g_hbmLight);
 			DeleteObject(g_hbmDark);
+			DeleteObject(g_hbmFlag);
+			DeleteObject(g_hbmFlagMask);
+			DeleteObject(flagArray);
 			
 			PostQuitMessage(0);
 			break;
@@ -411,6 +437,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 	return 0;
 }
 
+//win 32 window creation, default code,  
+//only changed initial size determination, name and included WS_THICKFRAME in the overlapped window so manual resizing is disabled
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,LPSTR lpCmdLine, int nCmdShow) {
 	WNDCLASSEX wc;
 	MSG Msg;

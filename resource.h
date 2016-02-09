@@ -11,6 +11,7 @@
 #define CM_EXIT				9070
 #define CM_ABOUT        	9069
 
+//simulation speed ids
 #define CM_SLOW				9068
 #define CM_NORMAL			9067
 #define CM_FAST				9066
