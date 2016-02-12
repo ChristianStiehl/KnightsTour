@@ -13,8 +13,8 @@ HBITMAP g_hbmDark = NULL;
 HBITMAP g_hbmFlag = NULL;
 HBITMAP g_hbmFlagMask = NULL;
 
-int sizeX = 10; //width of the grid
-int sizeY = 10; //height of the grid
+int sizeX = 8; //width of the grid
+int sizeY = 8; //height of the grid
 int tileWidth = 75; //widht of each square
 
 bool tourStarted = false; //bool to check if a tour is in progress
@@ -245,7 +245,7 @@ void UpdateKnight()
 			}
 			if(totalMoves != sizeX*sizeY){
 				updateKnight = false;
-				MessageBox(hwnd, "Tour is not possible from this starting position", "Error", MB_OK | MB_ICONEXCLAMATION);
+				MessageBox(hwnd, "Could not find a tour from this position!", "Error", MB_OK | MB_ICONEXCLAMATION);
 			}
 		}
 		//if a move was found, update the knights position accordingly
@@ -296,8 +296,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				g_knightInfo.width = bm.bmWidth;
 				g_knightInfo.height = bm.bmHeight;
 				
-				g_knightInfo.x = 1;
-				g_knightInfo.y = 5;
+				g_knightInfo.x = 0;
+				g_knightInfo.y = 0;
 				
 				for(int i = 0; i < sizeX*sizeY; i++){
 					flagArray[i] = 0;
@@ -364,8 +364,33 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 				case CM_RANDOM:
 					if(!tourStarted){
 						srand(time(NULL));
-						g_knightInfo.x = rand() %sizeX;
-						g_knightInfo.y = rand() %sizeY;
+						//if the board width and height are odd, never select a brown square to start
+						//otherwise the knights tour is never possible
+						if(sizeX % 2 == 0 && sizeY % 2 == 0){
+							g_knightInfo.x = rand() %sizeX;
+							g_knightInfo.y = rand() %sizeY;
+						}
+						else {
+							g_knightInfo.x = rand() %sizeX;
+							g_knightInfo.y = rand() %sizeY;
+							
+							if(g_knightInfo.y %2 != 0){
+								if(g_knightInfo.x %2 == 0){
+									if(g_knightInfo.x == sizeX){
+										g_knightInfo.x --;
+									}
+									else {
+										g_knightInfo.x ++;										
+									}
+								}								
+							}
+							else {
+								if(g_knightInfo.x %2 != 0){
+									g_knightInfo.x --;
+								}
+							}
+						}
+
 						HDC hdc = GetDC(hwnd);
 						DrawBoard(hdc);
 						DrawKnight(hdc);
@@ -421,76 +446,28 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 					break;
 				//all CM_GRID commands resize the grid
 				case CM_GRID_5:
-					{
-						Resize(5, 5, hwnd); //         A     B      C     D     E        F        G     H
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2},{1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(5, 5, hwnd);	
 					break;
 				case CM_GRID_6:
-					{
-						Resize(6, 6, hwnd);//          A     B      C      D     E       G      H       F
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{1,-2},{2,-1},{-1,-2} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(6, 6, hwnd);						
 					break;
 				case CM_GRID_7:
-					{
-						Resize(7, 7, hwnd);//          A      B     D     E       G      C        H     F
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2},{1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(7, 7, hwnd);	
 					break;
 				case CM_GRID_8:
-					{
-						Resize(8, 8, hwnd); //         A     B     C      D      E        G      F       H
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{1,-2},{-1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(8, 8, hwnd);	
 					break;
 				case CM_GRID_9:
-					{
-						Resize(9, 9, hwnd); //         A     B      C     D     E        F        G     H
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2},{1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(9, 9, hwnd);	
 					break;
 				case CM_GRID_10:
-					{
-						Resize(10, 10, hwnd); //         A     B      C     D     E       H      F     G
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{2,-1},{-1,-2},{1,-2} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(10, 10, hwnd);	
 					break;
 				case CM_GRID_15:
-					{
-						Resize(15, 15, hwnd); //        A     B      C     D     E      G        F      H
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{1,-2},{-1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(15, 15, hwnd);	
 					break;
 				case CM_GRID_RECT:
-					{
-						Resize(16, 8, hwnd); //         A     B      C     D     E        F        G     H
-						chess_moves tempArray[8] = { {2,1},{1,2},{-1,2},{-2,1},{-2,-1},{-1,-2},{1,-2},{2,-1} };
-						for(int i = 0; i < 8; i++){
-							moveArray[i] = tempArray[i];
-						}						
-					}
+					Resize(16, 8, hwnd);	
 					break;
 			}
 			break;
