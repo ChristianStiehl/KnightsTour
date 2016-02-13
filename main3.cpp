@@ -37,13 +37,14 @@ typedef struct _KNIGHTINFO
 	int x, y;
 }KNIGHTINFO;
 
+KNIGHTINFO g_knightInfo;
+
 //defines a structure for a chess move
 typedef struct chess_moves {
    //x and y position on the board
    int x,y;
 }chess_moves;
 
-KNIGHTINFO g_knightInfo;
 //create moveArray and fill it with all 8 possible moves a knight could make from any square
 //these are ordered in the standard warnsdorf priority order
 chess_moves moveArray[8] = { {2,1}, {1,2},{-1,2},{-2,1}, {-2,-1},{-1,-2},{1,-2},{2,-1} };
@@ -112,28 +113,26 @@ void DrawFlag(HDC hdc, HDC hdcMem, int i, int j)
 }
 
 //function to draw a tile
-void DrawTile(HDC hdc, HDC hdcMem, int i,int j, BITMAP bm, HBITMAP hbm)
+void DrawTile(HDC hdc, HDC hdcMem, int i,int j, HBITMAP hbm)
 {
 	SelectObject(hdcMem, hbm);
-	GetObject(g_hbmLight, sizeof(bm), &bm);
-	BitBlt(hdc, i*tileWidth, j*tileWidth, bm.bmWidth, bm.bmHeight, hdcMem, 0, 0, SRCCOPY);
+	BitBlt(hdc, i*tileWidth, j*tileWidth, tileWidth, tileWidth, hdcMem, 0, 0, SRCCOPY);
 }
 
 //function that loops trough the entire board and calls DrawTile and DrawFlag when needed
 void DrawBoard(HDC hdc)
 {
-	BITMAP bm;
 	HDC hdcMem = CreateCompatibleDC(hdc);
 	
 	for(int i = 0; i < sizeX; i++){
 		for(int j = 0; j < sizeY; j++){
 			if(i%2==0){
-				if(j%2==0){ DrawTile(hdc, hdcMem, i, j, bm, g_hbmLight); }
-				else { DrawTile(hdc, hdcMem, i, j, bm, g_hbmDark); }	
+				if(j%2==0){ DrawTile(hdc, hdcMem, i, j, g_hbmLight); }
+				else { DrawTile(hdc, hdcMem, i, j, g_hbmDark); }	
 			}
 			else {
-				if(j%2 != 0){ DrawTile(hdc, hdcMem, i, j, bm, g_hbmLight); }
-				else { DrawTile(hdc, hdcMem, i, j, bm, g_hbmDark); }
+				if(j%2 != 0){ DrawTile(hdc, hdcMem, i, j, g_hbmLight); }
+				else { DrawTile(hdc, hdcMem, i, j, g_hbmDark); }
 			}
 			
 			if(flagArray[i*sizeY+j] >= 1){
@@ -376,19 +375,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam) 
 							
 							if(g_knightInfo.y %2 != 0){
 								if(g_knightInfo.x %2 == 0){
-									if(g_knightInfo.x == sizeX){
-										g_knightInfo.x --;
-									}
-									else {
-										g_knightInfo.x ++;										
-									}
+									if(g_knightInfo.x == sizeX){g_knightInfo.x --; }
+									else { g_knightInfo.x ++; }
 								}								
 							}
-							else {
-								if(g_knightInfo.x %2 != 0){
-									g_knightInfo.x --;
-								}
-							}
+							else if(g_knightInfo.x %2 != 0){ g_knightInfo.x --; }
 						}
 
 						HDC hdc = GetDC(hwnd);
